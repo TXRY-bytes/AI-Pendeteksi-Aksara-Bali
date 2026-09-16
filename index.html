@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deteksi Aksara Bali — AI Powered</title>
+  <meta name="description" content="Deteksi dan kenali Aksara Bali secara real-time menggunakan kecerdasan buatan (AI). Gunakan kamera atau unggah gambar untuk transliterasi otomatis." />
+  <meta name="keywords" content="Aksara Bali, Deteksi, AI, Teachable Machine, Transliterasi, Bali Script" />
+  <meta name="author" content="Anti Gravity" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Deteksi Aksara Bali — AI Powered" />
+  <meta property="og:description" content="Deteksi dan kenali Aksara Bali secara real-time menggunakan kecerdasan buatan." />
+  <meta property="og:type" content="website" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- TensorFlow.js & Teachable Machine Image -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- =============================================
+       AMBIENT BACKGROUND
+       ============================================= -->
+  <div class="particles-bg" aria-hidden="true">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+  </div>
+  <div class="glow-orb glow-orb--gold" aria-hidden="true"></div>
+  <div class="glow-orb glow-orb--teal" aria-hidden="true"></div>
+
+  <!-- =============================================
+       LOADING OVERLAY
+       ============================================= -->
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="loading-spinner"></div>
+    <p class="loading-text">Memuat Model AI…</p>
+    <p class="loading-subtext">Teachable Machine sedang dipersiapkan</p>
+  </div>
+
+  <!-- =============================================
+       TOAST NOTIFICATION
+       ============================================= -->
+  <div id="toast" class="toast"></div>
+
+  <!-- =============================================
+       SECTION 1: HERO / LANDING PAGE
+       ============================================= -->
+  <section class="hero" id="hero">
+    <div class="container">
+      <div class="hero__badge">
+        <span class="hero__badge-dot"></span>
+        AI-Powered Detection
+      </div>
+
+      <h1 class="hero__title">
+        Deteksi<br />
+        <span class="hero__title-gradient">Aksara Bali</span>
+      </h1>
+
+      <p class="hero__subtitle">
+        Kenali dan pelajari aksara tradisional Bali secara instan menggunakan
+        kecerdasan buatan. Arahkan kamera atau unggah gambar — dan biarkan AI
+        membaca untuk Anda.
+      </p>
+
+      <div class="hero__actions">
+        <button class="btn-cta" id="btn-start" onclick="scrollToDetection()">
+          <span>Mulai Pindai</span>
+          <span class="btn-cta__icon">→</span>
+        </button>
+      </div>
+
+      <div class="scroll-indicator">
+        <span>Scroll</span>
+        <div class="scroll-indicator__line"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       SECTION 2: DETECTION MODULE
+       ============================================= -->
+  <section class="detection" id="detection">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-header__label">Modul Deteksi</span>
+        <h2 class="section-header__title">Pilih Metode Pemindaian</h2>
+      </div>
+
+      <!-- Tab Switcher -->
+      <div class="tab-switcher reveal">
+        <button class="tab-btn tab-btn--active" id="tab-camera" onclick="switchTab('camera')">
+          📹 Kamera
+        </button>
+        <button class="tab-btn" id="tab-upload" onclick="switchTab('upload')">
+          📤 Unggah Gambar
+        </button>
+      </div>
+
+      <!-- Detection Card -->
+      <div class="detection-card reveal">
+        <div class="tab-panels">
+
+          <!-- Tab: Camera -->
+          <div class="tab-panel tab-panel--active" id="panel-camera">
+            <div class="camera-container" id="camera-container">
+              <!-- Placeholder -->
+              <div class="camera-placeholder" id="camera-placeholder">
+                <div class="camera-placeholder__icon">📷</div>
+                <div class="camera-placeholder__text">Kamera belum aktif</div>
+              </div>
+
+              <!-- Video Element -->
+              <video id="webcam-video" autoplay playsinline muted></video>
+
+              <!-- Scanner Effects -->
+              <div class="scanner-line" id="scanner-line"></div>
+              <div class="scanner-corners" id="scanner-corners"><span></span></div>
+            </div>
+
+            <div class="camera-controls">
+              <button class="btn btn--primary" id="btn-camera-start" onclick="startCamera()">
+                📹 Aktifkan Kamera
+              </button>
+              <button class="btn btn--danger hidden" id="btn-camera-stop" onclick="stopCamera()">
+                ⏹ Hentikan
+              </button>
+              <button class="btn btn--secondary hidden" id="btn-camera-flip" onclick="flipCamera()">
+                🔄 Ganti Kamera
+              </button>
+            </div>
+          </div>
+
+          <!-- Tab: Upload -->
+          <div class="tab-panel" id="panel-upload">
+            <!-- Drop Zone -->
+            <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+              <div class="upload-zone__icon">📁</div>
+              <div class="upload-zone__text">Seret gambar ke sini atau <strong>klik untuk memilih</strong></div>
+              <div class="upload-zone__hint">Format: JPG, PNG, WEBP — Maks 10MB</div>
+              <input type="file" id="file-input" class="upload-zone__input" accept="image/*" onchange="handleFileSelect(event)" />
+            </div>
+
+            <!-- Upload Preview -->
+            <div class="upload-preview" id="upload-preview">
+              <div class="upload-preview__image-wrapper">
+                <img id="upload-image" class="upload-preview__image" alt="Preview" />
+                <button class="upload-preview__remove" onclick="removeUploadedImage()" title="Hapus gambar">✕</button>
+              </div>
+              <button class="btn btn--primary" id="btn-detect-upload" onclick="detectFromUpload()">
+                🔍 Deteksi Aksara
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       SECTION 3: RESULTS PANEL
+       ============================================= -->
+  <section class="results" id="results">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-header__label">Hasil Analisis</span>
+        <h2 class="section-header__title">Hasil Deteksi AI</h2>
+      </div>
+
+      <div class="results-card reveal">
+        <!-- Empty State -->
+        <div class="result-empty" id="result-empty">
+          <div class="result-empty__icon">🔮</div>
+          <p class="result-empty__text">Belum ada aksara yang terdeteksi.<br />Mulai pindai untuk melihat hasil.</p>
+        </div>
+
+        <!-- Detected Result -->
+        <div class="result-detected" id="result-detected">
+          <!-- Top Result Row -->
+          <div class="result-top">
+            <div class="result-top__aksara">
+              <div class="result-top__aksara-char" id="result-char">—</div>
+            </div>
+
+            <div class="result-top__info">
+              <div class="result-top__label">Aksara Terdeteksi</div>
+              <div class="result-top__name" id="result-name">—</div>
+              <div class="result-top__transliteration" id="result-transliteration">Transliterasi: —</div>
+            </div>
+
+            <!-- Confidence Ring -->
+            <div class="result-top__confidence">
+              <div class="confidence-ring">
+                <svg class="confidence-ring__svg" viewBox="0 0 72 72">
+                  <defs>
+                    <linearGradient id="confidence-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#d4a843" />
+                      <stop offset="100%" stop-color="#00e5c7" />
+                    </linearGradient>
+                  </defs>
+                  <circle class="confidence-ring__bg" cx="36" cy="36" r="33" />
+                  <circle class="confidence-ring__fill" id="confidence-fill" cx="36" cy="36" r="33" />
+                </svg>
+                <div class="confidence-ring__text" id="confidence-text">0%</div>
+              </div>
+              <span class="confidence-ring__label">Akurasi</span>
+            </div>
+          </div>
+
+          <!-- Actions Row -->
+          <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; justify-content: center;">
+            <button class="btn btn--secondary btn--icon btn-tts" id="btn-tts" onclick="speakResult()" title="Dengarkan pengucapan">
+              🔊
+            </button>
+          </div>
+
+          <!-- All Predictions -->
+          <div class="result-predictions">
+            <div class="result-predictions__title">Semua Prediksi</div>
+            <div id="predictions-list">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       FOOTER
+       ============================================= -->
+  <footer class="footer">
+    <div class="container">
+      <p class="footer__text">
+        Dibangun dengan ❤️ menggunakan
+        <a href="https://teachablemachine.withgoogle.com/" target="_blank" rel="noopener" class="footer__link">Google Teachable Machine</a>
+        &amp; TensorFlow.js<br />
+        © 2026 Deteksi Aksara Bali — Anti Gravity
+      </p>
+    </div>
+  </footer>
+
+  <!-- Main Application Script -->
+  <script src="app.js"></script>
+</body>
+</html>
